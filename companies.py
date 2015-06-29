@@ -7,11 +7,11 @@ from urllib.parse import urljoin
 BASE_URL = 'http://www.crmz.com/Directory/'
 
 def get_state_urls():
-    resp = requests.get(urljoin(BASE_URL, 'CountryUS.htm'))
+    resp = requests.get(BASE_URL)
     soup = BeautifulSoup(resp.text)
     for a in soup.select('a'):
         href = a.get('href')
-        if href.startswith('State'):
+        if href.startswith('State') or href.startswith('Country'):
             yield a.get('href')
 
 def get_company_urls(state_url):
