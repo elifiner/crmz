@@ -1,10 +1,13 @@
+import sys
+import time
 import requests
 from bs4 import BeautifulSoup
+from urllib.parse import urljoin
 
 BASE_URL = 'http://www.crmz.com/Directory/'
 
 def get_state_urls():
-    resp = requests.get(BASE_URL + 'CountryUS.htm')
+    resp = requests.get(urljoin(BASE_URL, 'CountryUS.htm'))
     soup = BeautifulSoup(resp.text)
     for a in soup.select('a'):
         href = a.get('href')
@@ -12,9 +15,43 @@ def get_state_urls():
             yield a.get('href')
 
 def get_company_urls(state_url):
-    
+    resp = requests.get(urljoin(BASE_URL, state_url))
+    soup = BeautifulSoup(resp.text)
+    for a in soup.select('a'):
+        href = a.get('href')
+        if 'ReportPreview.aspx?BusinessId' in href:
+            yield href
+
+def get_company_data(company_url):
+    resp = requests.get(urljoin(BASE_URL, company_url))
+    soup = BeautifulSoup(resp.text)
+    tables = soup.select('body > center > table')
+    name = tables[2].select('tr')[1].td.text
+    address1 = tables[2].select('tr')[2].td.text
+    address2 = tables[2].select('tr')[3].select('td')[1].text
+    ticker = tables[2].a.text
+    industry_rows = tables[6].select('table')[1].table.select('tr')
+    sector = industry_rows[4].select('td')[2].text
+    industry = industry_rows[5].select('td')[2].text
+
+    # remove non-breaking spaces from address2
+    address2 = address2.replace('\xa0', ' ')
+
+    return dict(
+        name=name,
+        address1=address1,
+        address2=address2,
+        ticker=ticker,
+        industry=industry,
+        sector=sector
+    )
 
 if __name__ == '__main__':
-    # state_urls = list(get_state_urls())
-    # print(len(state_urls))
-
+    for state_url in get_state_urls():
+        for company_url in get_company_urls(state_url):
+            try:
+                company_data = get_company_data(company_url)
+                print(company_data)
+            except Exception as e:
+                print('error parsing {}'.format(company_url), file=sys.stderr)
+            time.sleep(0.1)
