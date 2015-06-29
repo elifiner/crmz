@@ -47,11 +47,15 @@ def get_company_data(company_url):
     )
 
 if __name__ == '__main__':
-    for state_url in get_state_urls():
-        for company_url in get_company_urls(state_url):
-            try:
-                company_data = get_company_data(company_url)
-                print(company_data)
-            except Exception as e:
-                print('error parsing {}'.format(company_url), file=sys.stderr)
-            time.sleep(0.1)
+    try:
+        for state_url in get_state_urls():
+            for company_url in get_company_urls(state_url):
+                try:
+                    company_data = get_company_data(company_url)
+                    print('parsed {}'.format(urljoin(BASE_URL, company_url)), file=sys.stderr)
+                    print(company_data, file=sys.stdout)
+                except Exception as e:
+                    print('error {}'.format(urljoin(BASE_URL, company_url)), file=sys.stderr)
+                time.sleep(0.1)
+    except KeyboardInterrupt:
+        pass
